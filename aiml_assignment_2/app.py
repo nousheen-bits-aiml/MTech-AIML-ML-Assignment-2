@@ -48,8 +48,46 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 .metric-accent { height: 4px; border-radius: 99px; margin-top: 9px; }
 .info-strip { background: #eef2ff; border: 1px solid #dbeafe; color: #3730a3; border-radius: 13px; padding: 12px 15px; font-size: .9rem; }
 .stButton > button { border-radius: 10px; border: 0; color: white; font-weight: 700; background: linear-gradient(100deg,#4f46e5,#0284c7); }
-div[data-testid="stFileUploader"] { background: white; border: 1px dashed #a5b4fc; border-radius: 14px; padding: 8px; }
-div[data-testid="stDataFrame"] { border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
+div[data-testid="stFileUploader"] {
+  background: #ffffff !important; border: 1px dashed #a5b4fc;
+  border-radius: 14px; padding: 8px;
+}
+/* Keep all uploader instructions and controls clearly readable. */
+div[data-testid="stFileUploader"] *,
+div[data-testid="stFileUploader"] label,
+div[data-testid="stFileUploader"] small,
+div[data-testid="stFileUploader"] span,
+div[data-testid="stFileUploader"] p {
+  color: #111827 !important;
+  opacity: 1 !important;
+}
+div[data-testid="stFileUploader"] section {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+}
+div[data-testid="stFileUploader"] button {
+  color: #111827 !important;
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+div[data-testid="stFileUploader"] button:hover {
+  background: #e2e8f0 !important;
+  border-color: #94a3b8 !important;
+}
+/* High-contrast styling for evaluation visuals and report tables. */
+div[data-testid="stDataFrame"], div[data-testid="stTable"] {
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+}
+div[data-testid="stDataFrame"] *,
+div[data-testid="stTable"] * {
+  color: #111827 !important;
+}
+[data-testid="stMarkdownContainer"] h4 {
+  color: #172554 !important;
+  font-weight: 800 !important;
+}
 footer { visibility: hidden; }
 </style>
 """, unsafe_allow_html=True)
@@ -221,20 +259,27 @@ cm = confusion_matrix(y, predictions, labels=[0, 1])
 
 with left_col:
     st.markdown("#### Confusion matrix")
-    fig, ax = plt.subplots(figsize=(5.2, 4.2))
-    image = ax.imshow(cm, cmap="PuBu", interpolation="nearest")
-    ax.set_title("Actual vs predicted", fontsize=12, fontweight="bold", pad=12)
-    ax.set_xlabel("Predicted label")
-    ax.set_ylabel("Actual label")
+    fig, ax = plt.subplots(figsize=(5.2, 4.2), facecolor="white")
+    ax.set_facecolor("white")
+    image = ax.imshow(cm, cmap="Blues", interpolation="nearest", vmin=0)
+    ax.set_title("Actual vs predicted", fontsize=13, fontweight="bold",
+                 color="#111827", pad=12)
+    ax.set_xlabel("Predicted label", color="#111827", fontweight="bold")
+    ax.set_ylabel("Actual label", color="#111827", fontweight="bold")
     ax.set_xticks([0, 1], ["Malignant (0)", "Benign (1)"], rotation=10)
     ax.set_yticks([0, 1], ["Malignant (0)", "Benign (1)"])
+    ax.tick_params(axis="both", colors="#111827", labelsize=9)
     threshold = cm.max() / 2 if cm.size else 0
     for row in range(2):
         for col in range(2):
-            ax.text(col, row, str(cm[row, col]), ha="center", va="center",
-                    color="white" if cm[row, col] > threshold else "#172554",
-                    fontsize=14, fontweight="bold")
-    fig.colorbar(image, ax=ax, fraction=.046, pad=.04)
+            cell_value = cm[row, col]
+            ax.text(col, row, str(cell_value), ha="center", va="center",
+                    color="white" if cell_value > threshold else "#111827",
+                    fontsize=16, fontweight="bold")
+    colorbar = fig.colorbar(image, ax=ax, fraction=.046, pad=.04)
+    colorbar.ax.tick_params(colors="#111827")
+    for spine in ax.spines.values():
+        spine.set_color("#94a3b8")
     fig.tight_layout()
     st.pyplot(fig, use_container_width=True)
     plt.close(fig)
@@ -247,10 +292,46 @@ with right_col:
         output_dict=True, zero_division=0,
     )
     report_df = pd.DataFrame(report).transpose()
-    st.dataframe(report_df.style.format({
-        "precision": "{:.4f}", "recall": "{:.4f}",
-        "f1-score": "{:.4f}", "support": "{:.0f}",
-    }), use_container_width=True)
+    report_style = (
+        report_df.style
+        .format({
+            "precision": "{:.4f}", "recall": "{:.4f}",
+            "f1-score": "{:.4f}", "support": "{:.0f}",
+        })
+        .set_properties(**{
+            "color": "#111827",
+            "background-color": "#ffffff",
+            "font-weight": "600",
+            "border": "1px solid #d1d5db",
+            "padding": "9px 10px",
+        })
+        .set_table_styles([
+            {
+                "selector": "th",
+                "props": [
+                    ("background-color", "#172554"),
+                    ("color", "#ffffff"),
+                    ("font-weight", "800"),
+                    ("border", "1px solid #172554"),
+                    ("padding", "10px"),
+                    ("text-align", "left"),
+                ],
+            },
+            {
+                "selector": "td",
+                "props": [
+                    ("color", "#111827"),
+                    ("background-color", "#ffffff"),
+                    ("border", "1px solid #d1d5db"),
+                ],
+            },
+            {
+                "selector": "tbody tr:nth-child(even) td",
+                "props": [("background-color", "#f1f5f9")],
+            },
+        ])
+    )
+    st.table(report_style)
 
 if scores is not None:
     st.markdown('<div class="section-title">04 · ROC curve</div>', unsafe_allow_html=True)
