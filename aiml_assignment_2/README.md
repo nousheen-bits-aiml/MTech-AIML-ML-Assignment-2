@@ -1,48 +1,48 @@
-# Machine Learning Assignment 2 – Classifier Comparison
+# Wisconsin Diagnostic Breast Cancer — Classifier Studio
 
-## a. Problem statement
-The objective is to implement and compare five supervised classification algorithms on one common dataset. The models are evaluated using Accuracy, AUC, Precision, Recall, F1-score and Matthews Correlation Coefficient (MCC). A Streamlit interface allows a user to upload labelled test data, select a saved model and view its evaluation results.
+**M.Tech (AIML) | Machine Learning | Assignment 2**
 
-## b. Dataset description
-- **Dataset:** Wisconsin Diagnostic Breast Cancer (WDBC).
-- **Source:** UCI Machine Learning Repository – https://archive.ics.uci.edu/dataset/17/breast+cancer+wisconsin+diagnostic
-- **Instances:** 569.
-- **Input features:** 30 numeric features computed from digitized images of fine needle aspirate (FNA) of breast masses.
-- **Target:** Binary classification. In the scikit-learn version used here, `0 = malignant` and `1 = benign`.
-- **Why it meets the assignment requirement:** 569 instances (more than 500) and 30 features (more than 12).
-- **Split:** 80% training and 20% test, stratified, with `random_state=42`.
+This project implements and compares five supervised machine-learning classifiers on the Wisconsin Diagnostic Breast Cancer (WDBC) dataset. It also provides an interactive Streamlit application where a user can upload labelled test data, select a trained classifier, and inspect its evaluation results.
 
-The dataset is available through `sklearn.datasets.load_breast_cancer`, so `train_models.py` can reproduce the experiment without manually downloading a dataset file.
+## 1. Problem Statement
 
-## c. GitHub Repository Link
-**Add your GitHub repository URL here after creating and pushing this project.**
+The objective is to build and evaluate five classification models on the same binary-classification dataset:
 
-## d. Models used and evaluation metrics
+1. Logistic Regression
+2. Decision Tree Classifier
+3. K-Nearest Neighbors (KNN)
+4. Gaussian Naive Bayes
+5. Support Vector Machine (SVM)
 
-All five models use the same train/test split. StandardScaler is applied within pipelines for Logistic Regression, KNN and SVM. Decision Tree and Gaussian Naive Bayes are trained without feature scaling. AUC is calculated using the predicted probability of class 1 (benign).
+Each model is evaluated using the six metrics specified in the assignment: **Accuracy, AUC, Precision, Recall, F1-score, and Matthews Correlation Coefficient (MCC)**.
 
-| ML Model Name | Accuracy | AUC | Precision | Recall | F1 | MCC |
-|---|---:|---:|---:|---:|---:|---:|
-| Logistic Regression | 0.9825 | 0.9954 | 0.9861 | 0.9861 | 0.9861 | 0.9623 |
-| Decision Tree | 0.9123 | 0.9157 | 0.9559 | 0.9028 | 0.9286 | 0.8174 |
-| KNN | 0.9561 | 0.9788 | 0.9589 | 0.9722 | 0.9655 | 0.9054 |
-| Gaussian Naive Bayes | 0.9386 | 0.9878 | 0.9452 | 0.9583 | 0.9517 | 0.8676 |
-| Support Vector Machine | 0.9825 | 0.9950 | 0.9861 | 0.9861 | 0.9861 | 0.9623 |
+The Streamlit application loads the previously trained model selected by the user. It evaluates that model on the uploaded labelled test CSV; it does **not** retrain a model on the uploaded test data.
 
-### Observations on model performance
+## 2. Dataset Description
 
-| ML Model Name | Observation about model performance |
-|---|---|
-| Logistic Regression | Accuracy = 0.9825, AUC = 0.9954, Precision = 0.9861, Recall = 0.9861, F1 = 0.9861, MCC = 0.9623. The linear classifier provides a strong baseline and is effective when the classes are reasonably separable. |
-| Decision Tree | Accuracy = 0.9123, AUC = 0.9157, Precision = 0.9559, Recall = 0.9028, F1 = 0.9286, MCC = 0.8174. The tree captures non-linear decision rules and is easy to interpret, but a single tree can be sensitive to the training split. |
-| KNN | Accuracy = 0.9561, AUC = 0.9788, Precision = 0.9589, Recall = 0.9722, F1 = 0.9655, MCC = 0.9054. KNN classifies observations using nearby training samples; feature scaling is important because it uses distance calculations. |
-| Naive Bayes (Gaussian) | Accuracy = 0.9386, AUC = 0.9878, Precision = 0.9452, Recall = 0.9583, F1 = 0.9517, MCC = 0.8676. This probabilistic model is fast and assumes conditional independence and Gaussian feature distributions. |
-| Support Vector Machine | Accuracy = 0.9825, AUC = 0.9950, Precision = 0.9861, Recall = 0.9861, F1 = 0.9861, MCC = 0.9623. The RBF-kernel SVM can model non-linear boundaries; scaling is important for its distance and margin calculations. |
-| **Overall winner** | **Logistic Regression** has the highest F1-score on this particular held-out test split. Compare all six metrics before making a final judgement; the winner can differ depending on the metric and test split. |
+- **Dataset:** Wisconsin Diagnostic Breast Cancer (WDBC)
+- **Public source:** [UCI Machine Learning Repository — Breast Cancer Wisconsin (Diagnostic)](https://archive.ics.uci.edu/dataset/17/breast+cancer+wisconsin+diagnostic)
+- **Instances:** 569
+- **Input features:** 30 numerical features
+- **Task:** Binary classification
+- **Target labels used by the scikit-learn dataset:** `0 = malignant`, `1 = benign`
 
-## Project files
+The dataset exceeds the assignment minimum requirements of 500 instances and 12 features.
+
+### Train/test split
+
+The data is divided into **80% training and 20% testing**, using a stratified split with `random_state=42`. Stratification preserves the class proportions in the two subsets. The reported results correspond to this fixed split and the model settings in `train_models.py`.
+
+## 3. GitHub Repository Link
+
+[Open the GitHub project folder](https://github.com/nousheen-bits-aiml/MTech-AIML-ML-Assignment-2/tree/main/aiml_assignment_2)
+
+The project folder contains the Streamlit application, model-training script, dependency list, test data, dataset file, and saved model artifacts.
+
+### Project structure
+
 ```text
-aiml_assignment2/
+aiml_assignment_2/
 ├── app.py
 ├── train_models.py
 ├── requirements.txt
@@ -59,20 +59,72 @@ aiml_assignment2/
     └── metrics.json
 ```
 
-## How to run locally or in BITS Virtual Lab
-1. Open this project folder in the Python environment.
-2. Install dependencies: `pip install -r requirements.txt`.
-3. Run `python train_models.py` to train and save the five models and create `test_data.csv`.
-4. Run `streamlit run app.py`.
-5. Upload `test_data.csv`, choose a classifier and inspect the metrics, confusion matrix and classification report.
+The `model/` directory stores the five trained classifiers and the recorded evaluation metrics. `test_data.csv` is the labelled held-out test set used by the Streamlit app.
 
-## Streamlit Community Cloud deployment
-1. Push the complete project folder to a GitHub repository.
-2. Open https://streamlit.io/cloud and sign in with GitHub.
-3. Select **New app**, choose the repository and branch, set the main file to `app.py`, and deploy.
-4. Copy the working public app URL into the final submission PDF.
+## 4. Models Used and Evaluation Metrics
 
-The Streamlit app loads the saved model files and evaluates the uploaded labelled test CSV. It does not retrain a model using the uploaded test data.
+All five classifiers were trained and evaluated using the same dataset and fixed train/test split. The table below reports all six evaluation metrics required by the assignment for every classifier.
 
-## Reproducibility note
-The reported values are generated from the fixed stratified 80:20 split and the model settings in `train_models.py`. If you change the split, random seed, preprocessing or model hyperparameters, rerun training and update the table and observations accordingly.
+| ML Model Name | Accuracy | AUC | Precision | Recall | F1 Score | MCC |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Logistic Regression | **0.9825** | **0.9954** | **0.9861** | **0.9861** | **0.9861** | **0.9623** |
+| Decision Tree | 0.9123 | 0.9157 | 0.9559 | 0.9028 | 0.9286 | 0.8174 |
+| K-Nearest Neighbors (KNN) | 0.9561 | 0.9788 | 0.9589 | 0.9722 | 0.9655 | 0.9054 |
+| Gaussian Naive Bayes | 0.9386 | 0.9878 | 0.9452 | 0.9583 | 0.9517 | 0.8676 |
+| Support Vector Machine (SVM) | **0.9825** | 0.9950 | **0.9861** | **0.9861** | **0.9861** | **0.9623** |
+
+### Observations on Model Performance
+
+| ML Model Name | Observation about Model Performance |
+| --- | --- |
+| **Logistic Regression** | It performed strongly as a linear baseline, achieving 0.9825 accuracy, 0.9954 AUC and 0.9861 F1-score. It has the highest AUC among the five models in this experiment. |
+| **Decision Tree** | It can represent non-linear decision rules and is relatively easy to interpret. It achieved 0.9123 accuracy and 0.9286 F1-score. It had the lowest accuracy and MCC in this comparison. |
+| **K-Nearest Neighbors (KNN)** | It classifies observations using nearby training samples, so feature scaling is important. It achieved 0.9561 accuracy and 0.9655 F1-score, giving a strong result but below Logistic Regression and SVM on this split. |
+| **Gaussian Naive Bayes** | This is a fast probabilistic classifier based on conditional independence and Gaussian feature assumptions. It achieved 0.9386 accuracy and 0.9517 F1-score. Its AUC was 0.9878, despite its lower accuracy than KNN, Logistic Regression and SVM. |
+| **Support Vector Machine (SVM)** | The RBF-kernel SVM can learn non-linear decision boundaries. It achieved 0.9825 accuracy, 0.9950 AUC and 0.9861 F1-score, matching Logistic Regression on accuracy and F1-score in this test. |
+
+### Overall Winner
+
+**Logistic Regression is the best overall model for this experiment.** Logistic Regression and SVM tie for the highest accuracy (0.9825), precision (0.9861), recall (0.9861), F1-score (0.9861), and MCC (0.9623). Logistic Regression has a slightly higher AUC (0.9954 compared with 0.9950 for SVM), so it is selected as the overall winner based on the reported results. This conclusion applies to the specified dataset split and model settings.
+
+## 5. Streamlit Application
+
+**Live application:** [Open Classifier Studio on Streamlit Community Cloud](https://wisconsin-daignostic-breastcancer-classifier.streamlit.app)
+
+The application provides the following assignment features:
+
+- **CSV upload:** Upload the labelled `test_data.csv` file containing all 30 input features and the `target` column.
+- **Classifier selection:** Select one of the five saved classifiers using the model-selection dropdown.
+- **Evaluation metrics:** View Accuracy, AUC, Precision, Recall, F1-score and MCC for the selected model.
+- **Detailed evaluation:** View the confusion matrix and classification report.
+- **Model loading:** The app loads the saved model from `model/` and evaluates it on the uploaded test data. It does not train or retrain models on the uploaded test file.
+
+## 6. Running the Application Locally or in BITS Virtual Lab
+
+Open a terminal in the `aiml_assignment_2` project directory and install the dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+To train the five models and generate the saved model files and test CSV:
+
+```bash
+python train_models.py
+```
+
+To start the Streamlit application:
+
+```bash
+streamlit run app.py
+```
+
+When the app opens, upload `test_data.csv` and select a classifier to inspect its results.
+
+## 7. Reproducibility and Notes
+
+- The comparison results are from the stratified 80:20 train/test split with `random_state=42`.
+- The same held-out test data is used to compare all five models.
+- The Streamlit application uses the saved model artifacts; uploading the test CSV does not trigger model training.
+- If the split, random seed, preprocessing, or model settings are changed, rerun `train_models.py` and update the comparison table and observations with the new results.
+- The BITS Virtual Lab execution screenshot is a separate item in the final assignment PDF; it is not a substitute for the source code or README in the GitHub repository.
