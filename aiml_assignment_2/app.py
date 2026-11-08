@@ -254,84 +254,117 @@ for start in (0, 3):
             st.markdown(metric_card(*item), unsafe_allow_html=True)
 
 st.markdown('<div class="section-title">03 · Detailed evaluation</div>', unsafe_allow_html=True)
-left_col, right_col = st.columns([1, 1.15], gap="large")
 cm = confusion_matrix(y, predictions, labels=[0, 1])
 
-with left_col:
-    st.markdown("#### Confusion matrix")
-    fig, ax = plt.subplots(figsize=(5.2, 4.2), facecolor="white")
-    ax.set_facecolor("white")
-    image = ax.imshow(cm, cmap="Blues", interpolation="nearest", vmin=0)
-    ax.set_title("Actual vs predicted", fontsize=13, fontweight="bold",
-                 color="#111827", pad=12)
-    ax.set_xlabel("Predicted label", color="#111827", fontweight="bold")
-    ax.set_ylabel("Actual label", color="#111827", fontweight="bold")
-    ax.set_xticks([0, 1], ["Malignant (0)", "Benign (1)"], rotation=10)
-    ax.set_yticks([0, 1], ["Malignant (0)", "Benign (1)"])
-    ax.tick_params(axis="both", colors="#111827", labelsize=9)
-    threshold = cm.max() / 2 if cm.size else 0
-    for row in range(2):
-        for col in range(2):
-            cell_value = cm[row, col]
-            ax.text(col, row, str(cell_value), ha="center", va="center",
-                    color="white" if cell_value > threshold else "#111827",
-                    fontsize=16, fontweight="bold")
-    colorbar = fig.colorbar(image, ax=ax, fraction=.046, pad=.04)
-    colorbar.ax.tick_params(colors="#111827")
-    for spine in ax.spines.values():
-        spine.set_color("#94a3b8")
-    fig.tight_layout()
-    st.pyplot(fig, use_container_width=True)
-    plt.close(fig)
+# Give the confusion matrix the full content width so its labels and values
+# remain readable on smaller VM/browser windows.
+st.markdown("#### Confusion matrix")
+fig, ax = plt.subplots(figsize=(8, 5.8), facecolor="white")
+ax.set_facecolor("white")
+image = ax.imshow(cm, cmap="Blues", interpolation="nearest", vmin=0)
+ax.set_title("Actual vs predicted", fontsize=16, fontweight="bold",
+             color="#111827", pad=18)
+ax.set_xlabel("Predicted class", fontsize=12, fontweight="bold",
+              color="#111827", labelpad=12)
+ax.set_ylabel("Actual class", fontsize=12, fontweight="bold",
+              color="#111827", labelpad=12)
+ax.set_xticks([0, 1])
+ax.set_xticklabels(["Malignant (0)", "Benign (1)"],
+                   fontsize=11, fontweight="bold", color="#111827")
+ax.set_yticks([0, 1])
+ax.set_yticklabels(["Malignant (0)", "Benign (1)"],
+                   fontsize=11, fontweight="bold", color="#111827")
+ax.tick_params(axis="both", length=0, pad=12)
+ax.set_aspect("equal")
 
-with right_col:
-    st.markdown("#### Classification report")
-    report = classification_report(
-        y, predictions, labels=[0, 1],
-        target_names=["Malignant (0)", "Benign (1)"],
-        output_dict=True, zero_division=0,
-    )
-    report_df = pd.DataFrame(report).transpose()
-    report_style = (
-        report_df.style
-        .format({
-            "precision": "{:.4f}", "recall": "{:.4f}",
-            "f1-score": "{:.4f}", "support": "{:.0f}",
-        })
-        .set_properties(**{
-            "color": "#111827",
-            "background-color": "#ffffff",
-            "font-weight": "600",
-            "border": "1px solid #d1d5db",
-            "padding": "9px 10px",
-        })
-        .set_table_styles([
-            {
-                "selector": "th",
-                "props": [
-                    ("background-color", "#172554"),
-                    ("color", "#ffffff"),
-                    ("font-weight", "800"),
-                    ("border", "1px solid #172554"),
-                    ("padding", "10px"),
-                    ("text-align", "left"),
-                ],
-            },
-            {
-                "selector": "td",
-                "props": [
-                    ("color", "#111827"),
-                    ("background-color", "#ffffff"),
-                    ("border", "1px solid #d1d5db"),
-                ],
-            },
-            {
-                "selector": "tbody tr:nth-child(even) td",
-                "props": [("background-color", "#f1f5f9")],
-            },
-        ])
-    )
-    st.table(report_style)
+threshold = cm.max() / 2 if cm.size else 0
+for row in range(2):
+    for col in range(2):
+        value = int(cm[row, col])
+        ax.text(
+            col, row, f"{value:,}",
+            ha="center", va="center",
+            color="white" if value > threshold else "#111827",
+            fontsize=22, fontweight="bold",
+        )
+
+for spine in ax.spines.values():
+    spine.set_visible(False)
+fig.tight_layout(pad=2.0)
+st.pyplot(fig, use_container_width=True)
+plt.close(fig)
+
+# Also show the exact counts as a high-contrast table for easy reading.
+cm_table = pd.DataFrame(
+    cm,
+    index=["Actual: Malignant (0)", "Actual: Benign (1)"],
+    columns=["Predicted: Malignant (0)", "Predicted: Benign (1)"],
+)
+st.dataframe(
+    cm_table.style
+    .format("{:,.0f}")
+    .set_properties(**{
+        "color": "#111827",
+        "background-color": "#ffffff",
+        "font-weight": "700",
+        "font-size": "16px",
+        "text-align": "center",
+        "border": "1px solid #cbd5e1",
+    })
+    .set_table_styles([
+        {"selector": "th", "props": [
+            ("background-color", "#172554"),
+            ("color", "#ffffff"),
+            ("font-weight", "800"),
+            ("font-size", "13px"),
+            ("white-space", "normal"),
+            ("border", "1px solid #172554"),
+        ]},
+    ]),
+    use_container_width=True,
+    hide_index=False,
+)
+
+st.markdown("#### Classification report")
+report = classification_report(
+    y, predictions, labels=[0, 1],
+    target_names=["Malignant (0)", "Benign (1)"],
+    output_dict=True, zero_division=0,
+)
+report_df = pd.DataFrame(report).transpose()
+report_style = (
+    report_df.style
+    .format({
+        "precision": "{:.4f}", "recall": "{:.4f}",
+        "f1-score": "{:.4f}", "support": "{:.0f}",
+    })
+    .set_properties(**{
+        "color": "#111827",
+        "background-color": "#ffffff",
+        "font-weight": "600",
+        "border": "1px solid #d1d5db",
+        "padding": "9px 10px",
+    })
+    .set_table_styles([
+        {"selector": "th", "props": [
+            ("background-color", "#172554"),
+            ("color", "#ffffff"),
+            ("font-weight", "800"),
+            ("border", "1px solid #172554"),
+            ("padding", "10px"),
+            ("text-align", "left"),
+        ]},
+        {"selector": "td", "props": [
+            ("color", "#111827"),
+            ("background-color", "#ffffff"),
+            ("border", "1px solid #d1d5db"),
+        ]},
+        {"selector": "tbody tr:nth-child(even) td", "props": [
+            ("background-color", "#f1f5f9"),
+        ]},
+    ])
+)
+st.table(report_style)
 
 if scores is not None:
     st.markdown('<div class="section-title">04 · ROC curve</div>', unsafe_allow_html=True)
