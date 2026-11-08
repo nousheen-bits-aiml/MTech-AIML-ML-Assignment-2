@@ -4,6 +4,9 @@
 
 This project implements and compares five supervised machine-learning classifiers on the Wisconsin Diagnostic Breast Cancer (WDBC) dataset. It also provides an interactive Streamlit application where a user can upload labelled test data, select a trained classifier, and inspect its evaluation results.
 
+Github Repository link: https://github.com/nousheen-bits-aiml/MTech-AIML-ML-Assignment-2/tree/main/aiml_assignment_2
+Live Stremlit App link: https://wisconsin-daignostic-breastcancer-classifier.streamlit.app
+
 ## 1. Problem Statement
 
 The objective is to build and evaluate five classification models on the same binary-classification dataset:
