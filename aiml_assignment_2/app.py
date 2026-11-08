@@ -27,8 +27,22 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
               radial-gradient(circle at 95% 8%, rgba(14,165,233,.10), transparent 25%), #f6f8fc;
 }
 [data-testid="stHeader"] { background: rgba(246,248,252,.85); }
-[data-testid="stSidebar"] { background: linear-gradient(180deg,#111827 0%,#172554 100%); }
+[data-testid="stSidebar"] {
+  background: linear-gradient(180deg,#111827 0%,#172554 100%);
+  min-width: 270px;
+}
 [data-testid="stSidebar"] * { color: #f8fafc !important; }
+[data-testid="stSidebar"] [data-testid="stSelectbox"] label {
+  color: #f8fafc !important;
+  font-weight: 700 !important;
+}
+.model-picker {
+  background: #eaf0ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 14px;
+  padding: 12px 16px 4px;
+  margin: 0 0 16px;
+}
 .hero {
   padding: 1.55rem 1.8rem; border-radius: 22px; color: white;
   background: linear-gradient(115deg,#172554 0%,#4338ca 52%,#0284c7 100%);
@@ -122,12 +136,28 @@ def positive_class_scores(model, features):
         return scores
     return None
 
+def sync_model_from_sidebar():
+    st.session_state["main_model_picker"] = st.session_state["sidebar_model_picker"]
+
+def sync_model_from_main():
+    st.session_state["sidebar_model_picker"] = st.session_state["main_model_picker"]
+
+if "sidebar_model_picker" not in st.session_state:
+    st.session_state["sidebar_model_picker"] = list(MODEL_FILES.keys())[0]
+if "main_model_picker" not in st.session_state:
+    st.session_state["main_model_picker"] = st.session_state["sidebar_model_picker"]
+
 with st.sidebar:
     st.markdown("## 🧬 Classifier Studio")
     st.caption("M.Tech AIML • Machine Learning Assignment 2")
     st.markdown("---")
     st.markdown("### Experiment setup")
-    selected_model_name = st.selectbox("Choose a trained classifier", list(MODEL_FILES.keys()))
+    st.selectbox(
+        "Choose a trained classifier",
+        list(MODEL_FILES.keys()),
+        key="sidebar_model_picker",
+        on_change=sync_model_from_sidebar,
+    )
     st.markdown("---")
     st.markdown("### Dataset")
     st.markdown("**Wisconsin Diagnostic Breast Cancer**")
@@ -142,6 +172,18 @@ st.markdown("""
   <p>Explore five supervised learning models on the Wisconsin Diagnostic Breast Cancer dataset.</p>
 </div>
 """, unsafe_allow_html=True)
+
+# A second, visible selector keeps model switching possible even if the
+# Streamlit sidebar is collapsed in the virtual-machine browser.
+st.markdown('<div class="model-picker">', unsafe_allow_html=True)
+st.selectbox(
+    "Choose classifier (also available in the left sidebar)",
+    list(MODEL_FILES.keys()),
+    key="main_model_picker",
+    on_change=sync_model_from_main,
+)
+st.markdown('</div>', unsafe_allow_html=True)
+selected_model_name = st.session_state["main_model_picker"]
 
 st.markdown('<div class="section-title">01 · Upload evaluation data</div>', unsafe_allow_html=True)
 st.markdown('<div class="section-subtitle">Upload a labelled CSV containing all 30 input features and a <code>target</code> column.</div>', unsafe_allow_html=True)
@@ -337,16 +379,35 @@ with right:
 if scores is not None:
     st.markdown('<div class="section-title">04 · ROC curve</div>', unsafe_allow_html=True)
     st.markdown('<div class="section-subtitle">Trade-off between true positive rate and false positive rate.</div>', unsafe_allow_html=True)
-    fig_roc, ax_roc = plt.subplots(figsize=(7, 4.2))
-    ax_roc.plot(fpr, tpr, linewidth=2.5, color="#4f46e5", label=f"AUC = {auc_value:.4f}")
-    ax_roc.plot([0, 1], [0, 1], linestyle="--", linewidth=1.2, color="#94a3b8")
-    ax_roc.set(xlim=(0, 1), ylim=(0, 1.03), xlabel="False Positive Rate", ylabel="True Positive Rate")
-    ax_roc.set_title("Receiver Operating Characteristic", fontweight="bold")
-    ax_roc.grid(alpha=.18)
-    ax_roc.legend(loc="lower right", frameon=False)
-    fig_roc.tight_layout()
-    st.pyplot(fig_roc, use_container_width=True)
-    plt.close(fig_roc)
+    # Keep the ROC chart compact and centered instead of stretching it
+    # across the full dashboard width.
+    _, roc_center, _ = st.columns([1.5, 2, 1.5])
+    with roc_center:
+        fig_roc, ax_roc = plt.subplots(figsize=(4.2, 2.8), facecolor="white")
+        ax_roc.set_facecolor("white")
+        ax_roc.plot(
+            fpr, tpr, linewidth=2.2, color="#4f46e5",
+            label=f"AUC = {auc_value:.4f}",
+        )
+        ax_roc.plot(
+            [0, 1], [0, 1], linestyle="--", linewidth=1.1,
+            color="#94a3b8", label="Random classifier",
+        )
+        ax_roc.set(
+            xlim=(0, 1), ylim=(0, 1.03),
+            xlabel="False Positive Rate",
+            ylabel="True Positive Rate",
+        )
+        ax_roc.set_title(
+            "Receiver Operating Characteristic",
+            fontsize=11, fontweight="bold", color="#172554", pad=9,
+        )
+        ax_roc.tick_params(axis="both", labelsize=8, colors="#334155")
+        ax_roc.grid(alpha=.18)
+        ax_roc.legend(loc="lower right", frameon=False, fontsize=8)
+        fig_roc.tight_layout(pad=1.0)
+        st.pyplot(fig_roc, use_container_width=True)
+        plt.close(fig_roc)
 
 st.markdown("---")
 st.markdown("""
