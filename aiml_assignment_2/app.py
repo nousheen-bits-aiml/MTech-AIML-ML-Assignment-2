@@ -93,3 +93,183 @@ def positive_class_scores(model, features):
             scores = -scores
         return scores
     return None
+
+with st.sidebar:
+    st.markdown("## 🧬 Classifier Studio")
+    st.caption("M.Tech AIML • Machine Learning Assignment 2")
+    st.markdown("---")
+    st.markdown("### Experiment setup")
+    selected_model_name = st.selectbox("Choose a trained classifier", list(MODEL_FILES.keys()))
+    st.markdown("---")
+    st.markdown("### Dataset")
+    st.markdown("**Wisconsin Diagnostic Breast Cancer**")
+    st.markdown("569 observations  \n30 numerical features  \nBinary classification")
+    st.markdown("---")
+    st.caption("Saved models are loaded from `model/`. Uploaded data is used only for evaluation.")
+
+st.markdown("""
+<div class="hero">
+  <div class="hero-kicker">Machine learning • Model evaluation</div>
+  <h1>Breast Cancer Classifier Dashboard</h1>
+  <p>Explore five supervised learning models on the Wisconsin Diagnostic Breast Cancer dataset.</p>
+</div>
+""", unsafe_allow_html=True)
+
+st.markdown('<div class="section-title">01 · Upload evaluation data</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-subtitle">Upload a labelled CSV containing all 30 input features and a <code>target</code> column.</div>', unsafe_allow_html=True)
+uploaded_file = st.file_uploader(
+    "Choose a test CSV file", type=["csv"],
+    help="The CSV must contain the 30 WDBC features and target (0 = malignant, 1 = benign).",
+)
+
+if uploaded_file is None:
+    st.markdown('<div class="info-strip">⬆️ Upload the included <b>test_data.csv</b> file to view evaluation results.</div>', unsafe_allow_html=True)
+    st.stop()
+
+try:
+    test_df = pd.read_csv(uploaded_file)
+except Exception as exc:
+    st.error(f"Could not read the uploaded CSV: {exc}")
+    st.stop()
+
+missing_features = [c for c in FEATURE_COLUMNS if c not in test_df.columns]
+if missing_features:
+    st.error(
+        f"Missing {len(missing_features)} required WDBC feature column(s): "
+        + ", ".join(missing_features[:8]) + (" ..." if len(missing_features) > 8 else "")
+    )
+    st.stop()
+if TARGET_COLUMN not in test_df.columns:
+    st.error("The uploaded CSV must include a `target` column for labelled evaluation.")
+    st.stop()
+if test_df.empty:
+    st.error("The uploaded CSV has no rows.")
+    st.stop()
+
+try:
+    X = test_df[FEATURE_COLUMNS].apply(pd.to_numeric, errors="raise")
+    y = pd.to_numeric(test_df[TARGET_COLUMN], errors="raise").astype(int)
+except Exception as exc:
+    st.error(f"Please ensure all feature and target values are numeric. Details: {exc}")
+    st.stop()
+
+if not set(y.unique()).issubset({0, 1}):
+    st.error("The target column must contain only 0 (malignant) and 1 (benign).")
+    st.stop()
+if y.nunique() < 2:
+    st.error("The uploaded test data must contain both target classes (0 and 1) to calculate AUC.")
+    st.stop()
+if X.isnull().any().any() or y.isnull().any():
+    st.error("The uploaded file contains missing values. Please clean the CSV and upload it again.")
+    st.stop()
+
+st.markdown(
+    f'<div class="info-strip">✓ Loaded <b>{len(test_df):,}</b> labelled records and <b>{len(FEATURE_COLUMNS)}</b> input features.</div>',
+    unsafe_allow_html=True,
+)
+with st.expander("Preview uploaded data"):
+    st.dataframe(test_df.head(8), use_container_width=True)
+
+model_path = MODEL_DIR / MODEL_FILES[selected_model_name]
+if not model_path.exists():
+    st.error(f"Model file not found: `model/{MODEL_FILES[selected_model_name]}`. Upload the `model/` folder with app.py.")
+    st.stop()
+
+try:
+    model = load_model(str(model_path))
+    predictions = model.predict(X)
+except Exception as exc:
+    st.error(f"Could not load or run the selected model: {exc}")
+    st.stop()
+
+try:
+    accuracy = accuracy_score(y, predictions)
+    precision = precision_score(y, predictions, pos_label=1, zero_division=0)
+    recall = recall_score(y, predictions, pos_label=1, zero_division=0)
+    f1 = f1_score(y, predictions, pos_label=1, zero_division=0)
+    mcc = matthews_corrcoef(y, predictions)
+    scores = positive_class_scores(model, X)
+    if scores is not None:
+        fpr, tpr, _ = roc_curve(y, scores, pos_label=1)
+        auc_value = auc(fpr, tpr)
+    else:
+        auc_value = float("nan")
+except Exception as exc:
+    st.error(f"Evaluation failed: {exc}")
+    st.stop()
+
+st.markdown(f'<div class="section-title">02 · Results — {selected_model_name}</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-subtitle">Metrics calculated on the uploaded labelled test set.</div>', unsafe_allow_html=True)
+
+metric_items = [
+    ("Accuracy", accuracy, "#4f46e5"),
+    ("AUC", auc_value, "#0ea5e9"),
+    ("Precision", precision, "#8b5cf6"),
+    ("Recall", recall, "#06b6d4"),
+    ("F1 Score", f1, "#7c3aed"),
+    ("MCC", mcc, "#0f766e"),
+]
+for start in (0, 3):
+    cols = st.columns(3)
+    for col, item in zip(cols, metric_items[start:start + 3]):
+        with col:
+            st.markdown(metric_card(*item), unsafe_allow_html=True)
+
+st.markdown('<div class="section-title">03 · Detailed evaluation</div>', unsafe_allow_html=True)
+left_col, right_col = st.columns([1, 1.15], gap="large")
+cm = confusion_matrix(y, predictions, labels=[0, 1])
+
+with left_col:
+    st.markdown("#### Confusion matrix")
+    fig, ax = plt.subplots(figsize=(5.2, 4.2))
+    image = ax.imshow(cm, cmap="PuBu", interpolation="nearest")
+    ax.set_title("Actual vs predicted", fontsize=12, fontweight="bold", pad=12)
+    ax.set_xlabel("Predicted label")
+    ax.set_ylabel("Actual label")
+    ax.set_xticks([0, 1], ["Malignant (0)", "Benign (1)"], rotation=10)
+    ax.set_yticks([0, 1], ["Malignant (0)", "Benign (1)"])
+    threshold = cm.max() / 2 if cm.size else 0
+    for row in range(2):
+        for col in range(2):
+            ax.text(col, row, str(cm[row, col]), ha="center", va="center",
+                    color="white" if cm[row, col] > threshold else "#172554",
+                    fontsize=14, fontweight="bold")
+    fig.colorbar(image, ax=ax, fraction=.046, pad=.04)
+    fig.tight_layout()
+    st.pyplot(fig, use_container_width=True)
+    plt.close(fig)
+
+with right_col:
+    st.markdown("#### Classification report")
+    report = classification_report(
+        y, predictions, labels=[0, 1],
+        target_names=["Malignant (0)", "Benign (1)"],
+        output_dict=True, zero_division=0,
+    )
+    report_df = pd.DataFrame(report).transpose()
+    st.dataframe(report_df.style.format({
+        "precision": "{:.4f}", "recall": "{:.4f}",
+        "f1-score": "{:.4f}", "support": "{:.0f}",
+    }), use_container_width=True)
+
+if scores is not None:
+    st.markdown('<div class="section-title">04 · ROC curve</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-subtitle">Trade-off between true positive rate and false positive rate.</div>', unsafe_allow_html=True)
+    fig_roc, ax_roc = plt.subplots(figsize=(7, 4.2))
+    ax_roc.plot(fpr, tpr, linewidth=2.5, color="#4f46e5", label=f"AUC = {auc_value:.4f}")
+    ax_roc.plot([0, 1], [0, 1], linestyle="--", linewidth=1.2, color="#94a3b8")
+    ax_roc.set(xlim=(0, 1), ylim=(0, 1.03), xlabel="False Positive Rate", ylabel="True Positive Rate")
+    ax_roc.set_title("Receiver Operating Characteristic", fontweight="bold")
+    ax_roc.grid(alpha=.18)
+    ax_roc.legend(loc="lower right", frameon=False)
+    fig_roc.tight_layout()
+    st.pyplot(fig_roc, use_container_width=True)
+    plt.close(fig_roc)
+
+st.markdown("---")
+st.markdown("""
+<div style="text-align:center;color:#64748b;font-size:.82rem;padding:.4rem 0 1rem;">
+  <b style="color:#334155;">Classifier Studio</b> · M.Tech Artificial Intelligence & Machine Learning<br>
+  Wisconsin Diagnostic Breast Cancer dataset · Saved trained models; no retraining in this app
+</div>
+""", unsafe_allow_html=True)
